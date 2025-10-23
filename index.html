@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Simulador Lentes Inteligentes — Visor</title>
+<style>
+  :root{
+    --bg:#0f1724;
+    --panel:#0b1220cc;
+    --accent:#06b6d4;
+    --glass:#00b894;
+    --hud: rgba(0,0,0,0.35);
+  }
+  html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#071029 0%, #0f1724 100%);color:#e6eef6}
+  .wrap{max-width:1100px;margin:24px auto;padding:18px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+  header{display:flex;align-items:center;justify-content:space-between}
+  header h1{font-size:20px;margin:0}
+  #visor{position:relative;margin-top:12px;border-radius:12px;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;height:620px}
+  canvas#mainCanvas{width:100%;height:100%;display:block}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .btn{background:var(--panel);border:1px solid rgba(255,255,255,0.04);color:#e8f6ff;padding:8px 12px;border-radius:8px;cursor:pointer}
+  .btn.primary{background:linear-gradient(90deg,var(--glass),#00a97a);color:#022; font-weight:600}
+  .toggle{display:inline-flex;align-items:center;gap:10px}
+  .hud-box{position:absolute;left:16px;top:16px;padding:10px 12px;border-radius:8px;background:var(--hud);backdrop-filter: blur(4px);color:#fff}
+  .right-hud{position:absolute;right:16px;top:16px;padding:10px 12px;border-radius:8px;background:var(--hud);backdrop-filter: blur(4px);color:#fff;text-align:right}
+  .label{font-size:12px;opacity:0.9}
+  .small{font-size:13px;opacity:0.85}
+  footer{margin-top:14px;font-size:13px;color:#bcd}
+  .switch{position:relative;width:46px;height:26px;background:#111;border-radius:16px;padding:3px;cursor:pointer}
+  .knob{position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:all .18s}
+  .switch.on{background:linear-gradient(90deg,var(--accent),#0ea5a6); }
+  .switch.on .knob{transform:translateX(20px)}
+  .detector {
+    position:absolute; pointer-events:none;
+  }
+  .detector .box{
+    position:absolute;
+    border:2px solid rgba(0,255,200,0.9);
+    border-radius:6px;
+    box-shadow:0 6px 20px rgba(0,255,200,0.06);
+    background: linear-gradient(180deg, rgba(0,255,200,0.04), rgba(0,0,0,0.06));
+  }
+  .label-tag{
+    position:absolute;padding:6px;border-radius:6px;background:rgba(0,0,0,0.6);color:#bff;font-size:13px;border:1px solid rgba(0,255,200,0.2)
+  }
+  /* overlay effect to mimic viewfinder */
+  .vignette{position:absolute;inset:0;pointer-events:none;background:
+    radial-gradient(60% 60% at 50% 40%, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.35) 100%);}
+  .frame-glow{position:absolute;inset:0;border-radius:12px;box-shadow:0 0 90px rgba(0,200,160,0.06) inset;pointer-events:none}
+  .caption{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;background:rgba(2,6,23,0.5);padding:8px 12px;border-radius:999px;font-size:13px}
+  .topbar{display:flex;gap:10px;align-items:center}
+  .chip{padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.04);font-size:13px}
+  a.link{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Simulador — Lentes Inteligentes (Visor Urbano)</h1>
+        <div class="topbar small" style="margin-top:6px">
+          <div class="chip">Escenario: Calle urbana</div>
+          <div class="chip" id="modeChip">Modo: SIN lentes</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div class="label">Proyecto: Lentes inteligentes — TIF</div>
+        <div style="margin-top:6px" class="small">Presentable en GitHub Pages</div>
+      </div>
+    </header>
+
+    <div id="visor" aria-label="Visor de lentes inteligentes">
+      <canvas id="mainCanvas"></canvas>
+
+      <div class="hud-box" id="leftHud">
+        <div class="small" id="timeNow">--:--</div>
+        <div class="label">Visor AI</div>
+      </div>
+
+      <div class="right-hud" id="rightHud">
+        <div class="small" id="temp">Temp: 22°C</div>
+        <div class="small" id="battery">Batería: 86%</div>
+      </div>
+
+      <div class="vignette"></div>
+      <div class="frame-glow"></div>
+      <div class="caption" id="captionText">Pulsa "Activar lentes" para mejorar visión</div>
+
+      <div id="detectorOverlay" class="detector" aria-hidden="true"></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn primary" id="toggleLensBtn">Activar lentes</button>
+      <button class="btn" id="toggleDetectBtn">Mostrar detección</button>
+      <button class="btn" id="autoRotateBtn">Auto-rotar: ON</button>
+      <button class="btn" id="prevBtn">◀ Anterior</button>
+      <button class="btn" id="nextBtn">Siguiente ▶</button>
+      <button class="btn" id="captureBtn">📷 Captura</button>
+
+      <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+        <div class="label">HUD</div>
+        <div id="hudSwitch" class="switch on" role="switch" aria-checked="true">
+          <div class="knob"></div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div>Instrucciones: sube tus imágenes a la carpeta <code>images/</code> del repo y nómbralas <code>image1.jpg</code>, <code>image2.jpg</code>, ...</div>
+      <div style="margin-top:6px">Referencias de imágenes sugeridas (descarga desde estas páginas antes de subir). </div>
+    </footer>
+  </div>
+
+<script>
+/* -------------------------
+  Configuración (editar si quieres)
+--------------------------*/
+const IMAGES = [
+  'images/image1.jpg',
+  'images/image2.jpg',
+  'images/image3.jpg',
+  'images/image4.jpg'
+];
+const ROTATE_INTERVAL = 7000; // ms
+
+/* -------------------------
+  Código del simulador
+--------------------------*/
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('detectorOverlay');
+const caption = document.getElementById('captionText');
+const modeChip = document.getElementById('modeChip');
+
+let canvasWidth = 1000, canvasHeight = 600;
+let currentIndex = 0;
+let images = [];
+let lensOn = false;
+let detectOn = false;
+let hudOn = true;
+let autoRotate = true;
+let rotateTimer = null;
+
+/* Simulated detection boxes per image (relative 0..1 coords)
+   Cada elemento corresponde a IMAGES[i] y contiene un array de detecciones.
+   { x,y,w,h,label }
+   Tú puedes editar estas cajas según la escena que uses.
+*/
+const DETECTIONS = [
+  [ {x:0.12,y:0.53,w:0.12,h:0.22,label:'Persona'}, {x:0.68,y:0.38,w:0.18,h:0.15,label:'Señal'} ],
+  [ {x:0.34,y:0.44,w:0.20,h:0.25,label:'Auto'}, {x:0.15,y:0.30,w:0.12,h:0.18,label:'Bicicleta'} ],
+  [ {x:0.55,y:0.40,w:0.22,h:0.28,label:'Persona'}, {x:0.08,y:0.12,w:0.18,h:0.10,label:'Tienda'} ],
+  [ {x:0.22,y:0.20,w:0.20,h:0.40,label:'Edificio'}, {x:0.70,y:0.55,w:0.12,h:0.18,label:'Motocicleta'} ],
+];
+
+function resizeCanvas(){
+  const rect = document.getElementById('visor').getBoundingClientRect();
+  canvas.width = Math.round(rect.width * devicePixelRatio);
+  canvas.height = Math.round(rect.height * devicePixelRatio);
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  canvasWidth = canvas.width;
+  canvasHeight = canvas.height;
+  overlay.style.width = rect.width + 'px';
+  overlay.style.height = rect.height + 'px';
+  render();
+}
+window.addEventListener('resize', resizeCanvas);
+
+/* Load images */
+function preload(){
+  let loaded = 0;
+  IMAGES.forEach((src,i)=>{
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = src;
+    img.onload = ()=>{ loaded++; if(loaded===IMAGES.length) { render(); startAutoRotate(); } };
+    img.onerror = ()=>{ console.warn('No se pudo cargar', src); };
+    images[i]=img;
+  });
+}
+
+/* Core render */
+function render(){
+  ctx.clearRect(0,0,canvasWidth,canvasHeight);
+  const img = images[currentIndex];
+  if(!img || !img.complete) {
+    ctx.fillStyle='#111';
+    ctx.fillRect(0,0,canvasWidth,canvasHeight);
+    caption.textContent = 'Cargando imagen...';
+    return;
+  }
+  // Draw image centered & cover
+  const iw = img.width, ih = img.height;
+  const cw = canvasWidth, ch = canvasHeight;
+  const ir = iw/ih, cr = cw/ch;
+  let dw, dh;
+  if(ir > cr){ // image wider
+    dh = ch; dw = dh * ir;
+  } else {
+    dw = cw; dh = dw / ir;
+  }
+  const dx = (cw - dw)/2, dy = (ch - dh)/2;
+  // apply filter effect via offscreen draw
+  // For "lensOff" we draw blurred/low-contrast by drawing scaled down and scaled up to simulate blur (cheap)
+  if(!lensOn){
+    // cheap blur simulation: draw small, then upscale
+    const tmpW = Math.max(200, Math.round(dw*0.3));
+    const tmpH = Math.max(120, Math.round(dh*0.3));
+    const tmp = document.createElement('canvas');
+    tmp.width = tmpW; tmp.height = tmpH;
+    const tctx = tmp.getContext('2d');
+    tctx.drawImage(img, 0, 0, iw, ih, 0, 0, tmpW, tmpH);
+    // draw back scaled to area
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'low';
+    ctx.globalAlpha = 0.95;
+    ctx.drawImage(tmp, 0, 0, tmpW, tmpH, dx, dy, dw, dh);
+    ctx.globalAlpha = 1;
+    // darken for low-vision effect
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(0,0,canvasWidth,canvasHeight);
+    caption.textContent = 'Modo: SIN lentes — visión degradada';
+    modeChip.textContent = 'Modo: SIN lentes';
+  } else {
+    // "with lenses" - sharper
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    // draw original
+    ctx.drawImage(img, 0, 0, iw, ih, dx, dy, dw, dh);
+    // simulate contrast/brightness: draw translucent overlay or apply simple pixel manipulation (fast approach: use composite)
+    ctx.fillStyle = 'rgba(0,0,0,0)';
+    ctx.fillRect(0,0,canvasWidth,canvasHeight);
+    // Simulated 'super-resolution' — enhance edges with unsharp mask style: draw slightly sharpened copy
+    try {
+      // create small convolution for sharpening (approx) - we'll use globalCompositeOperation effects
+      ctx.save();
+      ctx.globalAlpha = 0.9;
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.drawImage(img, 0, 0, iw, ih, dx-1*devicePixelRatio, dy-1*devicePixelRatio, dw+2*devicePixelRatio, dh+2*devicePixelRatio);
+      ctx.restore();
+    } catch(e){}
+    caption.textContent = 'Modo: CON lentes — mejora activada';
+    modeChip.textContent = 'Modo: CON lentes';
+  }
+
+  // If HUD on, draw translucent HUD elements onto canvas for capture+visual continuity
+  if(hudOn){
+    const pad = 16 * devicePixelRatio;
+    // draw small top-left box
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    roundRect(ctx, pad, pad, 240*devicePixelRatio, 60*devicePixelRatio, 8*devicePixelRatio);
+    ctx.fill();
+    ctx.fillStyle = '#dff';
+    ctx.font = `${14*devicePixelRatio}px sans-serif`;
+    ctx.fillText(getTimeString(), pad+12*devicePixelRatio, pad+22*devicePixelRatio);
+    ctx.font = `${12*devicePixelRatio}px sans-serif`;
+    ctx.fillStyle = '#bfe';
+    ctx.fillText('Visor AI · Modo demo', pad+12*devicePixelRatio, pad+42*devicePixelRatio);
+  }
+
+  // Draw detection overlay if on (DOM overlay used for interactivity; for capture we draw on canvas)
+  if(detectOn){
+    drawDetectionsCanvas();
+    drawDetectionsDOM(); // DOM overlay so boxes are crisp and selectable
+  } else {
+    clearDetectionsDOM();
+  }
+}
+
+/* Draw detection boxes directly on canvas (useful for capture) */
+function drawDetectionsCanvas(){
+  const dets = DETECTIONS[currentIndex] || [];
+  dets.forEach(d=>{
+    const x = d.x * canvasWidth, y = d.y * canvasHeight, w = d.w * canvasWidth, h = d.h * canvasHeight;
+    ctx.save();
+    ctx.lineWidth = 3*devicePixelRatio;
+    ctx.strokeStyle = 'rgba(0,255,200,0.95)';
+    ctx.fillStyle = 'rgba(0,255,200,0.06)';
+    roundRect(ctx, x, y, w, h, 8*devicePixelRatio);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(x, y - 26*devicePixelRatio, ctx.measureText(d.label).width + 16*devicePixelRatio, 22*devicePixelRatio);
+    ctx.fillStyle = '#bff';
+    ctx.font = `${14*devicePixelRatio}px sans-serif`;
+    ctx.fillText(d.label, x + 8*devicePixelRatio, y - 8*devicePixelRatio);
+    ctx.restore();
+  });
+}
+
+/* DOM-based overlay (for live view) */
+function drawDetectionsDOM(){
+  clearDetectionsDOM();
+  const dets = DETECTIONS[currentIndex] || [];
+  const rect = overlay.getBoundingClientRect();
+  dets.forEach(d=>{
+    const box = document.createElement('div');
+    box.className='box';
+    box.style.left = (d.x * rect.width) + 'px';
+    box.style.top = (d.y * rect.height) + 'px';
+    box.style.width = (d.w * rect.width) + 'px';
+    box.style.height = (d.h * rect.height) + 'px';
+    box.style.border = '2px solid rgba(0,255,200,0.95)';
+    box.style.boxSizing = 'border-box';
+    box.style.borderRadius = '8px';
+    box.style.background = 'linear-gradient(180deg, rgba(0,255,200,0.03), rgba(0,0,0,0.05))';
+    box.style.position='absolute';
+    const tag = document.createElement('div');
+    tag.className='label-tag';
+    tag.style.left = (d.x * rect.width) + 'px';
+    tag.style.top = (d.y * rect.height - 28) + 'px';
+    tag.textContent = d.label;
+    overlay.appendChild(box);
+    overlay.appendChild(tag);
+  });
+}
+
+/* Clear dom overlay */
+function clearDetectionsDOM(){
+  while(overlay.firstChild) overlay.removeChild(overlay.firstChild);
+}
+
+/* Helper: rounded rect */
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+/* Controls wiring */
+document.getElementById('toggleLensBtn').addEventListener('click', ()=>{
+  lensOn = !lensOn;
+  document.getElementById('toggleLensBtn').textContent = lensOn ? 'Desactivar lentes' : 'Activar lentes';
+  render();
+});
+document.getElementById('toggleDetectBtn').addEventListener('click', ()=>{
+  detectOn = !detectOn;
+  document.getElementById('toggleDetectBtn').textContent = detectOn ? 'Ocultar detección' : 'Mostrar detección';
+  render();
+});
+document.getElementById('prevBtn').addEventListener('click', ()=>{
+  currentIndex = (currentIndex - 1 + IMAGES.length) % IMAGES.length;
+  render();
+});
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  currentIndex = (currentIndex + 1) % IMAGES.length;
+  render();
+});
+document.getElementById('autoRotateBtn').addEventListener('click', ()=>{
+  autoRotate = !autoRotate;
+  document.getElementById('autoRotateBtn').textContent = 'Auto-rotar: ' + (autoRotate ? 'ON' : 'OFF');
+  if(autoRotate) startAutoRotate(); else stopAutoRotate();
+});
+document.getElementById('hudSwitch').addEventListener('click', (e)=>{
+  hudOn = !hudOn;
+  e.currentTarget.classList.toggle('on', hudOn);
+  overlay.style.display = hudOn ? 'block' : 'block'; // DOM overlay still needed for detection
+  render();
+});
+document.getElementById('captureBtn').addEventListener('click', captureImage);
+
+/* Timer for time/battery updates (HUD) */
+function updateHud(){
+  document.getElementById('timeNow').textContent = getTimeString();
+  document.getElementById('temp').textContent = 'Temp: ' + (20 + Math.floor(Math.random()*7)) + '°C';
+  document.getElementById('battery').textContent = 'Batería: ' + (60 + Math.floor(Math.random()*40)) + '%';
+}
+setInterval(updateHud, 5000);
+updateHud();
+
+/* Auto-rotate */
+function startAutoRotate(){
+  stopAutoRotate();
+  rotateTimer = setInterval(()=>{
+    currentIndex = (currentIndex + 1) % IMAGES.length;
+    render();
+  }, ROTATE_INTERVAL);
+}
+function stopAutoRotate(){ if(rotateTimer) { clearInterval(rotateTimer); rotateTimer=null; } }
+
+/* Capture: download canvas as image */
+function captureImage(){
+  // draw again but ensure detections drawn on canvas
+  render();
+  // create a dataURL
+  const data = canvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = data;
+  a.download = `simulador_lentes_capture_${Date.now()}.png`;
+  a.click();
+}
+
+/* Utility */
+function getTimeString(){
+  const d = new Date();
+  return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+}
+
+/* Ensure overlay sizing and load images */
+window.addEventListener('load', ()=>{
+  preload();
+  resizeCanvas();
+});
+</script>
+</body>
+</html>
+
