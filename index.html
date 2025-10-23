@@ -147,38 +147,187 @@ let rotateTimer = null;
    { x,y,w,h,label }
    Tú puedes editar estas cajas según la escena que uses.
 */
-const DETECTIONS = [
-  [ {x:0.12,y:0.53,w:0.12,h:0.22,label:'Persona'}, {x:0.68,y:0.38,w:0.18,h:0.15,label:'Señal'} ],
-  [ {x:0.34,y:0.44,w:0.20,h:0.25,label:'Auto'}, {x:0.15,y:0.30,w:0.12,h:0.18,label:'Bicicleta'} ],
-  [ {x:0.55,y:0.40,w:0.22,h:0.28,label:'Persona'}, {x:0.08,y:0.12,w:0.18,h:0.10,label:'Tienda'} ],
-  [ {x:0.22,y:0.20,w:0.20,h:0.40,label:'Edificio'}, {x:0.70,y:0.55,w:0.12,h:0.18,label:'Motocicleta'} ],
-];
+/* ---------- DETECCIÓN AUTOMÁTICA PRECISA (Sobel mejorado + agrupación) ---------- */
 
-function resizeCanvas(){
-  const rect = document.getElementById('visor').getBoundingClientRect();
-  canvas.width = Math.round(rect.width * devicePixelRatio);
-  canvas.height = Math.round(rect.height * devicePixelRatio);
-  canvas.style.width = rect.width + 'px';
-  canvas.style.height = rect.height + 'px';
-  canvasWidth = canvas.width;
-  canvasHeight = canvas.height;
-  overlay.style.width = rect.width + 'px';
-  overlay.style.height = rect.height + 'px';
-  render();
+const EDGE_THRESHOLD = 55;      // sensibilidad de bordes
+const MIN_COMPONENT_PIXELS = 300; // objetos mínimos más pequeños detectados
+const MERGE_DISTANCE = 25;       // distancia para unir cajas cercanas
+const MAX_DETECTIONS = 10;       // máximo número de objetos detectados
+
+function getImagePixelsScaled(img){
+  const tmp = document.createElement('canvas');
+  tmp.width = canvas.width;
+  tmp.height = canvas.height;
+  const tctx = tmp.getContext('2d');
+  const iw = img.width, ih = img.height;
+  const cw = canvas.width, ch = canvas.height;
+  const ir = iw/ih, cr = cw/ch;
+  let dw, dh;
+  if(ir > cr){ dh = ch; dw = dh * ir; } else { dw = cw; dh = dw / ir; }
+  const dx = Math.round((cw - dw)/2), dy = Math.round((ch - dh)/2);
+  tctx.drawImage(img, 0, 0, iw, ih, dx, dy, dw, dh);
+  return tctx.getImageData(0,0,tmp.width,tmp.height);
 }
-window.addEventListener('resize', resizeCanvas);
 
-/* Load images */
-function preload(){
-  let loaded = 0;
-  IMAGES.forEach((src,i)=>{
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = src;
-    img.onload = ()=>{ loaded++; if(loaded===IMAGES.length) { render(); startAutoRotate(); } };
-    img.onerror = ()=>{ console.warn('No se pudo cargar', src); };
-    images[i]=img;
+function grayscaleFromImageData(imgData){
+  const w = imgData.width, h = imgData.height;
+  const gray = new Uint8ClampedArray(w*h);
+  const d = imgData.data;
+  let idx=0;
+  for(let i=0;i<d.length;i+=4){
+    const g = 0.2126*d[i] + 0.7152*d[i+1] + 0.0722*d[i+2];
+    gray[idx++] = g;
+  }
+  return {gray, w, h};
+}
+
+function sobel(grayObj){
+  const {gray,w,h} = grayObj;
+  const grad = new Uint8ClampedArray(w*h);
+  for(let y=1;y<h-1;y++){
+    for(let x=1;x<w-1;x++){
+      const i = y*w + x;
+      const gx = -gray[i-w-1] - 2*gray[i-1] - gray[i+w-1] + gray[i-w+1] + 2*gray[i+1] + gray[i+w+1];
+      const gy = -gray[i-w-1] - 2*gray[i-w] - gray[i-w+1] + gray[i+w-1] + 2*gray[i+w] + gray[i+w+1];
+      const gval = Math.hypot(gx, gy);
+      grad[i] = gval > 255 ? 255 : gval;
+    }
+  }
+  return {grad, w, h};
+}
+
+function findComponents(gradObj, threshold, minPixels){
+  const {grad,w,h} = gradObj;
+  const visited = new Uint8Array(w*h);
+  const comps = [];
+  const stack = [];
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const idx = y*w + x;
+      if(visited[idx] || grad[idx] < threshold) continue;
+      let minX=x,maxX=x,minY=y,maxY=y,count=0;
+      stack.push(idx);
+      visited[idx]=1;
+      while(stack.length){
+        const cur=stack.pop();
+        const cy=Math.floor(cur/w),cx=cur%w;
+        count++;
+        if(cx<minX)minX=cx; if(cx>maxX)maxX=cx;
+        if(cy<minY)minY=cy; if(cy>maxY)maxY=cy;
+        for(let ny=cy-1;ny<=cy+1;ny++){
+          if(ny<0||ny>=h)continue;
+          for(let nx=cx-1;nx<=cx+1;nx++){
+            if(nx<0||nx>=w)continue;
+            const ni=ny*w+nx;
+            if(!visited[ni] && grad[ni]>=threshold){
+              visited[ni]=1;stack.push(ni);
+            } else visited[ni]=1;
+          }
+        }
+      }
+      if(count>=minPixels)comps.push({minX,minY,maxX,maxY,count});
+    }
+  }
+  return comps;
+}
+
+function mergeBoxes(boxes, dist){
+  const merged=[];
+  const used=new Array(boxes.length).fill(false);
+  for(let i=0;i<boxes.length;i++){
+    if(used[i])continue;
+    let a=boxes[i];
+    for(let j=i+1;j<boxes.length;j++){
+      if(used[j])continue;
+      const b=boxes[j];
+      const ax=(a.minX+a.maxX)/2,ay=(a.minY+a.maxY)/2;
+      const bx=(b.minX+b.maxX)/2,by=(b.minY+b.maxY)/2;
+      if(Math.hypot(ax-bx,ay-by)<dist){
+        a={minX:Math.min(a.minX,b.minX),minY:Math.min(a.minY,b.minY),
+           maxX:Math.max(a.maxX,b.maxX),maxY:Math.max(a.maxY,b.maxY),count:a.count+b.count};
+        used[j]=true;
+      }
+    }
+    merged.push(a);
+    used[i]=true;
+  }
+  return merged;
+}
+
+function componentsToDetections(comps,w,h){
+  return comps.map(c=>{
+    const x=c.minX/w,y=c.minY/h,wbox=(c.maxX-c.minX)/w,hbox=(c.maxY-c.minY)/h;
+    const aspect=(c.maxX-c.minX)/(c.maxY-c.minY+1e-6);
+    let label='Objeto';
+    if(aspect>1.6&&c.count>900)label='Auto';
+    else if(aspect<0.8&&c.count<2500)label='Persona';
+    else if(c.count>3500)label='Estructura';
+    return {x,y,w:wbox,h:hbox,label};
   });
+}
+
+function getDetectionsForCurrent(){
+  const img=images[currentIndex];
+  if(!img||!img.complete)return [];
+  try{
+    const data=getImagePixelsScaled(img);
+    const gray=grayscaleFromImageData(data);
+    const sob=sobel(gray);
+    const comps=findComponents(sob,EDGE_THRESHOLD,MIN_COMPONENT_PIXELS);
+    let boxes=mergeBoxes(comps,MERGE_DISTANCE*devicePixelRatio);
+    boxes.sort((a,b)=>b.count-a.count);
+    boxes=boxes.slice(0,MAX_DETECTIONS);
+    return componentsToDetections(boxes,sob.w,sob.h);
+  }catch(e){
+    console.warn('Error detección:',e);
+    return [];
+  }
+}
+
+function drawDetectionsCanvas(){
+  const dets=getDetectionsForCurrent();
+  dets.forEach(d=>{
+    const x=d.x*canvasWidth,y=d.y*canvasHeight,w=d.w*canvasWidth,h=d.h*canvasHeight;
+    ctx.save();
+    ctx.lineWidth=2.5*devicePixelRatio;
+    ctx.strokeStyle='rgba(0,255,200,0.85)';
+    ctx.fillStyle='rgba(0,255,200,0.03)';
+    roundRect(ctx,x,y,w,h,6*devicePixelRatio);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle='rgba(0,0,0,0.5)';
+    ctx.fillRect(x,y-22*devicePixelRatio,ctx.measureText(d.label).width+14*devicePixelRatio,20*devicePixelRatio);
+    ctx.fillStyle='#aff';
+    ctx.font=`${13*devicePixelRatio}px sans-serif`;
+    ctx.fillText(d.label,x+7*devicePixelRatio,y-8*devicePixelRatio);
+    ctx.restore();
+  });
+}
+
+function drawDetectionsDOM(){
+  clearDetectionsDOM();
+  const dets=getDetectionsForCurrent();
+  const rect=overlay.getBoundingClientRect();
+  dets.forEach(d=>{
+    const box=document.createElement('div');
+    box.className='box';
+    box.style.left=(d.x*rect.width)+'px';
+    box.style.top=(d.y*rect.height)+'px';
+    box.style.width=(d.w*rect.width)+'px';
+    box.style.height=(d.h*rect.height)+'px';
+    box.style.border='2px solid rgba(0,255,200,0.85)';
+    overlay.appendChild(box);
+    const tag=document.createElement('div');
+    tag.className='label-tag';
+    tag.textContent=d.label;
+    tag.style.left=(d.x*rect.width)+'px';
+    tag.style.top=(d.y*rect.height-25)+'px';
+    overlay.appendChild(tag);
+  });
+}
+
+function clearDetectionsDOM(){
+  while(overlay.firstChild)overlay.removeChild(overlay.firstChild);
 }
 
 /* Core render */
