@@ -21,37 +21,21 @@
   .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   .btn{background:var(--panel);border:1px solid rgba(255,255,255,0.04);color:#e8f6ff;padding:8px 12px;border-radius:8px;cursor:pointer}
   .btn.primary{background:linear-gradient(90deg,var(--glass),#00a97a);color:#022; font-weight:600}
-  .toggle{display:inline-flex;align-items:center;gap:10px}
-  .hud-box{position:absolute;left:16px;top:16px;padding:10px 12px;border-radius:8px;background:var(--hud);backdrop-filter: blur(4px);color:#fff}
-  .right-hud{position:absolute;right:16px;top:16px;padding:10px 12px;border-radius:8px;background:var(--hud);backdrop-filter: blur(4px);color:#fff;text-align:right}
+  .hud-box,.right-hud{position:absolute;padding:10px 12px;border-radius:8px;background:var(--hud);backdrop-filter:blur(4px);color:#fff}
+  .hud-box{left:16px;top:16px}
+  .right-hud{right:16px;top:16px;text-align:right}
   .label{font-size:12px;opacity:0.9}
   .small{font-size:13px;opacity:0.85}
-  footer{margin-top:14px;font-size:13px;color:#bcd}
   .switch{position:relative;width:46px;height:26px;background:#111;border-radius:16px;padding:3px;cursor:pointer}
   .knob{position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:all .18s}
-  .switch.on{background:linear-gradient(90deg,var(--accent),#0ea5a6); }
+  .switch.on{background:linear-gradient(90deg,var(--accent),#0ea5a6);}
   .switch.on .knob{transform:translateX(20px)}
-  .detector {
-    position:absolute; pointer-events:none;
-  }
-  .detector .box{
-    position:absolute;
-    border:2px solid rgba(0,255,200,0.9);
-    border-radius:6px;
-    box-shadow:0 6px 20px rgba(0,255,200,0.06);
-    background: linear-gradient(180deg, rgba(0,255,200,0.04), rgba(0,0,0,0.06));
-  }
-  .label-tag{
-    position:absolute;padding:6px;border-radius:6px;background:rgba(0,0,0,0.6);color:#bff;font-size:13px;border:1px solid rgba(0,255,200,0.2)
-  }
-  /* overlay effect to mimic viewfinder */
-  .vignette{position:absolute;inset:0;pointer-events:none;background:
-    radial-gradient(60% 60% at 50% 40%, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.35) 100%);}
+  .detector{position:absolute;pointer-events:none;}
+  .detector .box{position:absolute;border:2px solid rgba(0,255,200,0.9);border-radius:6px;box-shadow:0 6px 20px rgba(0,255,200,0.06);background:linear-gradient(180deg,rgba(0,255,200,0.04),rgba(0,0,0,0.06));}
+  .label-tag{position:absolute;padding:6px;border-radius:6px;background:rgba(0,0,0,0.6);color:#bff;font-size:13px;border:1px solid rgba(0,255,200,0.2)}
+  .vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(60% 60% at 50% 40%,rgba(0,0,0,0) 0%,rgba(0,0,0,0) 50%,rgba(0,0,0,0.35) 100%);}
   .frame-glow{position:absolute;inset:0;border-radius:12px;box-shadow:0 0 90px rgba(0,200,160,0.06) inset;pointer-events:none}
   .caption{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;background:rgba(2,6,23,0.5);padding:8px 12px;border-radius:999px;font-size:13px}
-  .topbar{display:flex;gap:10px;align-items:center}
-  .chip{padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.04);font-size:13px}
-  a.link{color:var(--accent);text-decoration:none}
 </style>
 </head>
 <body>
@@ -59,35 +43,21 @@
     <header>
       <div>
         <h1>Simulador — Lentes Inteligentes (Visor Urbano)</h1>
-        <div class="topbar small" style="margin-top:6px">
-          <div class="chip">Escenario: Calle urbana</div>
-          <div class="chip" id="modeChip">Modo: SIN lentes</div>
-        </div>
+        <div class="small" id="modeChip">Modo: SIN lentes</div>
       </div>
       <div style="text-align:right">
         <div class="label">Proyecto: Lentes inteligentes — TIF</div>
-        <div style="margin-top:6px" class="small">Presentable en GitHub Pages</div>
+        <div class="small">Simulación interactiva</div>
       </div>
     </header>
 
-    <div id="visor" aria-label="Visor de lentes inteligentes">
+    <div id="visor">
       <canvas id="mainCanvas"></canvas>
-
-      <div class="hud-box" id="leftHud">
-        <div class="small" id="timeNow">--:--</div>
-        <div class="label">Visor AI</div>
-      </div>
-
-      <div class="right-hud" id="rightHud">
-        <div class="small" id="temp">Temp: 22°C</div>
-        <div class="small" id="battery">Batería: 86%</div>
-      </div>
-
-      <div class="vignette"></div>
-      <div class="frame-glow"></div>
-      <div class="caption" id="captionText">Pulsa "Activar lentes" para mejorar visión</div>
-
-      <div id="detectorOverlay" class="detector" aria-hidden="true"></div>
+      <div class="hud-box" id="leftHud"><div id="timeNow">--:--</div><div class="label">Visor AI</div></div>
+      <div class="right-hud" id="rightHud"><div id="temp">Temp: 22°C</div><div id="battery">Batería: 86%</div></div>
+      <div class="vignette"></div><div class="frame-glow"></div>
+      <div class="caption" id="captionText">Pulsa “Activar lentes” para mejorar visión</div>
+      <div id="detectorOverlay" class="detector"></div>
     </div>
 
     <div class="controls">
@@ -97,466 +67,87 @@
       <button class="btn" id="prevBtn">◀ Anterior</button>
       <button class="btn" id="nextBtn">Siguiente ▶</button>
       <button class="btn" id="captureBtn">📷 Captura</button>
-
-      <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
-        <div class="label">HUD</div>
-        <div id="hudSwitch" class="switch on" role="switch" aria-checked="true">
-          <div class="knob"></div>
-        </div>
-      </div>
     </div>
 
-    <footer>
-      <div>Instrucciones: sube tus imágenes a la carpeta <code>images/</code> del repo y nómbralas <code>image1.jpg</code>, <code>image2.jpg</code>, ...</div>
-      <div style="margin-top:6px">Referencias de imágenes sugeridas (descarga desde estas páginas antes de subir). </div>
-    </footer>
+    <footer class="small" style="margin-top:10px;opacity:0.8">Sube tus imágenes urbanas al repositorio y nómbralas <code>image1.jpg</code>, <code>image2.jpg</code>, etc.</footer>
   </div>
 
 <script>
-/* -------------------------
-  Configuración (editar si quieres)
---------------------------*/
-const IMAGES = [
-  'image1.jpg',
-  'image2.jpg',
-  'image3.jpg',
-  'image4.jpg'
-];
-const ROTATE_INTERVAL = 7000; // ms
+/* CONFIGURACIÓN */
+const IMAGES = ['image1.jpg','image2.jpg','image3.jpg','image4.jpg'];
+const ROTATE_INTERVAL = 7000;
 
-/* -------------------------
-  Código del simulador
---------------------------*/
-const canvas = document.getElementById('mainCanvas');
-const ctx = canvas.getContext('2d');
-const overlay = document.getElementById('detectorOverlay');
-const caption = document.getElementById('captionText');
-const modeChip = document.getElementById('modeChip');
+/* VARIABLES */
+const canvas=document.getElementById('mainCanvas');
+const ctx=canvas.getContext('2d');
+const overlay=document.getElementById('detectorOverlay');
+const caption=document.getElementById('captionText');
+const modeChip=document.getElementById('modeChip');
+let canvasWidth=1000,canvasHeight=600,currentIndex=0,images=[],lensOn=false,detectOn=false,hudOn=true,autoRotate=true,rotateTimer=null;
 
-let canvasWidth = 1000, canvasHeight = 600;
-let currentIndex = 0;
-let images = [];
-let lensOn = false;
-let detectOn = false;
-let hudOn = true;
-let autoRotate = true;
-let rotateTimer = null;
+/* ---------- DETECCIÓN AUTOMÁTICA PRECISA ---------- */
+const EDGE_THRESHOLD=55,MIN_COMPONENT_PIXELS=300,MERGE_DISTANCE=25,MAX_DETECTIONS=10;
+function getImagePixelsScaled(img){const tmp=document.createElement('canvas');tmp.width=canvas.width;tmp.height=canvas.height;const tctx=tmp.getContext('2d');const iw=img.width,ih=img.height;const cw=canvas.width,ch=canvas.height;const ir=iw/ih,cr=cw/ch;let dw,dh;if(ir>cr){dh=ch;dw=dh*ir;}else{dw=cw;dh=dw/ir;}const dx=(cw-dw)/2,dy=(ch-dh)/2;tctx.drawImage(img,0,0,iw,ih,dx,dy,dw,dh);return tctx.getImageData(0,0,tmp.width,tmp.height);}
+function grayscaleFromImageData(i){const w=i.width,h=i.height,g=new Uint8ClampedArray(w*h),d=i.data;let x=0;for(let i2=0;i2<d.length;i2+=4){g[x++]=0.2126*d[i2]+0.7152*d[i2+1]+0.0722*d[i2+2];}return{gray:g,w,h};}
+function sobel(o){const{gray,w,h}=o,g2=new Uint8ClampedArray(w*h);for(let y=1;y<h-1;y++){for(let x=1;x<w-1;x++){const i=y*w+x,gx=-gray[i-w-1]-2*gray[i-1]-gray[i+w-1]+gray[i-w+1]+2*gray[i+1]+gray[i+w+1],gy=-gray[i-w-1]-2*gray[i-w]-gray[i-w+1]+gray[i+w-1]+2*gray[i+w]+gray[i+w+1],gval=Math.hypot(gx,gy);g2[i]=gval>255?255:gval;}}return{grad:g2,w,h};}
+function findComponents(o,t,m){const{grad,w,h}=o,v=new Uint8Array(w*h),c=[],s=[];for(let y=0;y<h;y++){for(let x=0;x<w;x++){const i=y*w+x;if(v[i]||grad[i]<t)continue;let minX=x,maxX=x,minY=y,maxY=y,count=0;s.push(i);v[i]=1;while(s.length){const cur=s.pop(),cy=Math.floor(cur/w),cx=cur%w;count++;if(cx<minX)minX=cx;if(cx>maxX)maxX=cx;if(cy<minY)minY=cy;if(cy>maxY)maxY=cy;for(let ny=cy-1;ny<=cy+1;ny++){if(ny<0||ny>=h)continue;for(let nx=cx-1;nx<=cx+1;nx++){if(nx<0||nx>=w)continue;const ni=ny*w+nx;if(!v[ni]&&grad[ni]>=t){v[ni]=1;s.push(ni);}else v[ni]=1;}}}if(count>=m)c.push({minX,minY,maxX,maxY,count});}}return c;}
+function mergeBoxes(b,d){const m=[],u=new Array(b.length).fill(false);for(let i=0;i<b.length;i++){if(u[i])continue;let a=b[i];for(let j=i+1;j<b.length;j++){if(u[j])continue;const e=b[j],ax=(a.minX+a.maxX)/2,ay=(a.minY+a.maxY)/2,bx=(e.minX+e.maxX)/2,by=(e.minY+e.maxY)/2;if(Math.hypot(ax-bx,ay-by)<d){a={minX:Math.min(a.minX,e.minX),minY:Math.min(a.minY,e.minY),maxX:Math.max(a.maxX,e.maxX),maxY:Math.max(a.maxY,e.maxY),count:a.count+e.count};u[j]=true;}}m.push(a);u[i]=true;}return m;}
+function componentsToDetections(c,w,h){return c.map(x=>{const a=(x.maxX-x.minX)/(x.maxY-x.minY+1e-6);let l='Objeto';if(a>1.6&&x.count>900)l='Auto';else if(a<0.8&&x.count<2500)l='Persona';else if(x.count>3500)l='Estructura';return{x:x.minX/w,y:x.minY/h,w:(x.maxX-x.minX)/w,h:(x.maxY-x.minY)/h,label:l};});}
+function getDetectionsForCurrent(){const img=images[currentIndex];if(!img||!img.complete)return[];try{const d=getImagePixelsScaled(img),g=grayscaleFromImageData(d),s=sobel(g),c=findComponents(s,EDGE_THRESHOLD,MIN_COMPONENT_PIXELS);let b=mergeBoxes(c,MERGE_DISTANCE*devicePixelRatio);b.sort((a,b2)=>b2.count-a.count);b=b.slice(0,MAX_DETECTIONS);return componentsToDetections(b,s.w,s.h);}catch(e){console.warn('Error detección:',e);return[];}}
+function drawDetectionsCanvas(){const dets=getDetectionsForCurrent();dets.forEach(d=>{const x=d.x*canvasWidth,y=d.y*canvasHeight,w=d.w*canvasWidth,h=d.h*canvasHeight;ctx.save();ctx.lineWidth=2.5*devicePixelRatio;ctx.strokeStyle='rgba(0,255,200,0.85)';ctx.fillStyle='rgba(0,255,200,0.03)';roundRect(ctx,x,y,w,h,6*devicePixelRatio);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(x,y-22*devicePixelRatio,ctx.measureText(d.label).width+14*devicePixelRatio,20*devicePixelRatio);ctx.fillStyle='#aff';ctx.font=`${13*devicePixelRatio}px sans-serif`;ctx.fillText(d.label,x+7*devicePixelRatio,y-8*devicePixelRatio);ctx.restore();});}
+function drawDetectionsDOM(){clearDetectionsDOM();const dets=getDetectionsForCurrent(),r=overlay.getBoundingClientRect();dets.forEach(d=>{const b=document.createElement('div');b.className='box';b.style.left=(d.x*r.width)+'px';b.style.top=(d.y*r.height)+'px';b.style.width=(d.w*r.width)+'px';b.style.height=(d.h*r.height)+'px';overlay.appendChild(b);const t=document.createElement('div');t.className='label-tag';t.textContent=d.label;t.style.left=(d.x*r.width)+'px';t.style.top=(d.y*r.height-25)+'px';overlay.appendChild(t);});}
+function clearDetectionsDOM(){while(overlay.firstChild)overlay.removeChild(overlay.firstChild);}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 
-/* Simulated detection boxes per image (relative 0..1 coords)
-   Cada elemento corresponde a IMAGES[i] y contiene un array de detecciones.
-   { x,y,w,h,label }
-   Tú puedes editar estas cajas según la escena que uses.
-*/
-/* ---------- DETECCIÓN AUTOMÁTICA PRECISA (Sobel mejorado + agrupación) ---------- */
-
-const EDGE_THRESHOLD = 55;      // sensibilidad de bordes
-const MIN_COMPONENT_PIXELS = 300; // objetos mínimos más pequeños detectados
-const MERGE_DISTANCE = 25;       // distancia para unir cajas cercanas
-const MAX_DETECTIONS = 10;       // máximo número de objetos detectados
-
-function getImagePixelsScaled(img){
-  const tmp = document.createElement('canvas');
-  tmp.width = canvas.width;
-  tmp.height = canvas.height;
-  const tctx = tmp.getContext('2d');
-  const iw = img.width, ih = img.height;
-  const cw = canvas.width, ch = canvas.height;
-  const ir = iw/ih, cr = cw/ch;
-  let dw, dh;
-  if(ir > cr){ dh = ch; dw = dh * ir; } else { dw = cw; dh = dw / ir; }
-  const dx = Math.round((cw - dw)/2), dy = Math.round((ch - dh)/2);
-  tctx.drawImage(img, 0, 0, iw, ih, dx, dy, dw, dh);
-  return tctx.getImageData(0,0,tmp.width,tmp.height);
-}
-
-function grayscaleFromImageData(imgData){
-  const w = imgData.width, h = imgData.height;
-  const gray = new Uint8ClampedArray(w*h);
-  const d = imgData.data;
-  let idx=0;
-  for(let i=0;i<d.length;i+=4){
-    const g = 0.2126*d[i] + 0.7152*d[i+1] + 0.0722*d[i+2];
-    gray[idx++] = g;
-  }
-  return {gray, w, h};
-}
-
-function sobel(grayObj){
-  const {gray,w,h} = grayObj;
-  const grad = new Uint8ClampedArray(w*h);
-  for(let y=1;y<h-1;y++){
-    for(let x=1;x<w-1;x++){
-      const i = y*w + x;
-      const gx = -gray[i-w-1] - 2*gray[i-1] - gray[i+w-1] + gray[i-w+1] + 2*gray[i+1] + gray[i+w+1];
-      const gy = -gray[i-w-1] - 2*gray[i-w] - gray[i-w+1] + gray[i+w-1] + 2*gray[i+w] + gray[i+w+1];
-      const gval = Math.hypot(gx, gy);
-      grad[i] = gval > 255 ? 255 : gval;
-    }
-  }
-  return {grad, w, h};
-}
-
-function findComponents(gradObj, threshold, minPixels){
-  const {grad,w,h} = gradObj;
-  const visited = new Uint8Array(w*h);
-  const comps = [];
-  const stack = [];
-  for(let y=0;y<h;y++){
-    for(let x=0;x<w;x++){
-      const idx = y*w + x;
-      if(visited[idx] || grad[idx] < threshold) continue;
-      let minX=x,maxX=x,minY=y,maxY=y,count=0;
-      stack.push(idx);
-      visited[idx]=1;
-      while(stack.length){
-        const cur=stack.pop();
-        const cy=Math.floor(cur/w),cx=cur%w;
-        count++;
-        if(cx<minX)minX=cx; if(cx>maxX)maxX=cx;
-        if(cy<minY)minY=cy; if(cy>maxY)maxY=cy;
-        for(let ny=cy-1;ny<=cy+1;ny++){
-          if(ny<0||ny>=h)continue;
-          for(let nx=cx-1;nx<=cx+1;nx++){
-            if(nx<0||nx>=w)continue;
-            const ni=ny*w+nx;
-            if(!visited[ni] && grad[ni]>=threshold){
-              visited[ni]=1;stack.push(ni);
-            } else visited[ni]=1;
-          }
-        }
-      }
-      if(count>=minPixels)comps.push({minX,minY,maxX,maxY,count});
-    }
-  }
-  return comps;
-}
-
-function mergeBoxes(boxes, dist){
-  const merged=[];
-  const used=new Array(boxes.length).fill(false);
-  for(let i=0;i<boxes.length;i++){
-    if(used[i])continue;
-    let a=boxes[i];
-    for(let j=i+1;j<boxes.length;j++){
-      if(used[j])continue;
-      const b=boxes[j];
-      const ax=(a.minX+a.maxX)/2,ay=(a.minY+a.maxY)/2;
-      const bx=(b.minX+b.maxX)/2,by=(b.minY+b.maxY)/2;
-      if(Math.hypot(ax-bx,ay-by)<dist){
-        a={minX:Math.min(a.minX,b.minX),minY:Math.min(a.minY,b.minY),
-           maxX:Math.max(a.maxX,b.maxX),maxY:Math.max(a.maxY,b.maxY),count:a.count+b.count};
-        used[j]=true;
-      }
-    }
-    merged.push(a);
-    used[i]=true;
-  }
-  return merged;
-}
-
-function componentsToDetections(comps,w,h){
-  return comps.map(c=>{
-    const x=c.minX/w,y=c.minY/h,wbox=(c.maxX-c.minX)/w,hbox=(c.maxY-c.minY)/h;
-    const aspect=(c.maxX-c.minX)/(c.maxY-c.minY+1e-6);
-    let label='Objeto';
-    if(aspect>1.6&&c.count>900)label='Auto';
-    else if(aspect<0.8&&c.count<2500)label='Persona';
-    else if(c.count>3500)label='Estructura';
-    return {x,y,w:wbox,h:hbox,label};
-  });
-}
-
-function getDetectionsForCurrent(){
-  const img=images[currentIndex];
-  if(!img||!img.complete)return [];
-  try{
-    const data=getImagePixelsScaled(img);
-    const gray=grayscaleFromImageData(data);
-    const sob=sobel(gray);
-    const comps=findComponents(sob,EDGE_THRESHOLD,MIN_COMPONENT_PIXELS);
-    let boxes=mergeBoxes(comps,MERGE_DISTANCE*devicePixelRatio);
-    boxes.sort((a,b)=>b.count-a.count);
-    boxes=boxes.slice(0,MAX_DETECTIONS);
-    return componentsToDetections(boxes,sob.w,sob.h);
-  }catch(e){
-    console.warn('Error detección:',e);
-    return [];
-  }
-}
-
-function drawDetectionsCanvas(){
-  const dets=getDetectionsForCurrent();
-  dets.forEach(d=>{
-    const x=d.x*canvasWidth,y=d.y*canvasHeight,w=d.w*canvasWidth,h=d.h*canvasHeight;
-    ctx.save();
-    ctx.lineWidth=2.5*devicePixelRatio;
-    ctx.strokeStyle='rgba(0,255,200,0.85)';
-    ctx.fillStyle='rgba(0,255,200,0.03)';
-    roundRect(ctx,x,y,w,h,6*devicePixelRatio);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle='rgba(0,0,0,0.5)';
-    ctx.fillRect(x,y-22*devicePixelRatio,ctx.measureText(d.label).width+14*devicePixelRatio,20*devicePixelRatio);
-    ctx.fillStyle='#aff';
-    ctx.font=`${13*devicePixelRatio}px sans-serif`;
-    ctx.fillText(d.label,x+7*devicePixelRatio,y-8*devicePixelRatio);
-    ctx.restore();
-  });
-}
-
-function drawDetectionsDOM(){
-  clearDetectionsDOM();
-  const dets=getDetectionsForCurrent();
-  const rect=overlay.getBoundingClientRect();
-  dets.forEach(d=>{
-    const box=document.createElement('div');
-    box.className='box';
-    box.style.left=(d.x*rect.width)+'px';
-    box.style.top=(d.y*rect.height)+'px';
-    box.style.width=(d.w*rect.width)+'px';
-    box.style.height=(d.h*rect.height)+'px';
-    box.style.border='2px solid rgba(0,255,200,0.85)';
-    overlay.appendChild(box);
-    const tag=document.createElement('div');
-    tag.className='label-tag';
-    tag.textContent=d.label;
-    tag.style.left=(d.x*rect.width)+'px';
-    tag.style.top=(d.y*rect.height-25)+'px';
-    overlay.appendChild(tag);
-  });
-}
-
-function clearDetectionsDOM(){
-  while(overlay.firstChild)overlay.removeChild(overlay.firstChild);
-}
-
-/* Core render */
+/* RENDER */
 function render(){
   ctx.clearRect(0,0,canvasWidth,canvasHeight);
-  const img = images[currentIndex];
-  if(!img || !img.complete) {
-    ctx.fillStyle='#111';
-    ctx.fillRect(0,0,canvasWidth,canvasHeight);
-    caption.textContent = 'Cargando imagen...';
-    return;
-  }
-  // Draw image centered & cover
-  const iw = img.width, ih = img.height;
-  const cw = canvasWidth, ch = canvasHeight;
-  const ir = iw/ih, cr = cw/ch;
-  let dw, dh;
-  if(ir > cr){ // image wider
-    dh = ch; dw = dh * ir;
-  } else {
-    dw = cw; dh = dw / ir;
-  }
-  const dx = (cw - dw)/2, dy = (ch - dh)/2;
-  // apply filter effect via offscreen draw
-  // For "lensOff" we draw blurred/low-contrast by drawing scaled down and scaled up to simulate blur (cheap)
+  const img=images[currentIndex];
+  if(!img||!img.complete){ctx.fillStyle='#111';ctx.fillRect(0,0,canvasWidth,canvasHeight);caption.textContent='Cargando imagen...';return;}
+  const iw=img.width,ih=img.height,cw=canvasWidth,ch=canvasHeight,ir=iw/ih,cr=cw/ch;let dw,dh;
+  if(ir>cr){dh=ch;dw=dh*ir;}else{dw=cw;dh=dw/ir;}
+  const dx=(cw-dw)/2,dy=(ch-dh)/2;
   if(!lensOn){
-    // cheap blur simulation: draw small, then upscale
-    const tmpW = Math.max(200, Math.round(dw*0.3));
-    const tmpH = Math.max(120, Math.round(dh*0.3));
-    const tmp = document.createElement('canvas');
-    tmp.width = tmpW; tmp.height = tmpH;
-    const tctx = tmp.getContext('2d');
-    tctx.drawImage(img, 0, 0, iw, ih, 0, 0, tmpW, tmpH);
-    // draw back scaled to area
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'low';
-    ctx.globalAlpha = 0.95;
-    ctx.drawImage(tmp, 0, 0, tmpW, tmpH, dx, dy, dw, dh);
-    ctx.globalAlpha = 1;
-    // darken for low-vision effect
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    ctx.fillRect(0,0,canvasWidth,canvasHeight);
-    caption.textContent = 'Modo: SIN lentes — visión degradada';
-    modeChip.textContent = 'Modo: SIN lentes';
+    const tmp=document.createElement('canvas');tmp.width=Math.max(200,Math.round(dw*0.3));tmp.height=Math.max(120,Math.round(dh*0.3));
+    const tctx=tmp.getContext('2d');tctx.drawImage(img,0,0,iw,ih,0,0,tmp.width,tmp.height);
+    ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='low';ctx.globalAlpha=0.95;
+    ctx.drawImage(tmp,0,0,tmp.width,tmp.height,dx,dy,dw,dh);ctx.globalAlpha=1;ctx.fillStyle='rgba(0,0,0,0.22)';ctx.fillRect(0,0,canvasWidth,canvasHeight);
+    caption.textContent='Modo: SIN lentes — visión degradada';modeChip.textContent='Modo: SIN lentes';
   } else {
-    // "with lenses" - sharper
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    // draw original
-    ctx.drawImage(img, 0, 0, iw, ih, dx, dy, dw, dh);
-    // simulate contrast/brightness: draw translucent overlay or apply simple pixel manipulation (fast approach: use composite)
-    ctx.fillStyle = 'rgba(0,0,0,0)';
-    ctx.fillRect(0,0,canvasWidth,canvasHeight);
-    // Simulated 'super-resolution' — enhance edges with unsharp mask style: draw slightly sharpened copy
-    try {
-      // create small convolution for sharpening (approx) - we'll use globalCompositeOperation effects
-      ctx.save();
-      ctx.globalAlpha = 0.9;
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.drawImage(img, 0, 0, iw, ih, dx-1*devicePixelRatio, dy-1*devicePixelRatio, dw+2*devicePixelRatio, dh+2*devicePixelRatio);
-      ctx.restore();
-    } catch(e){}
-    caption.textContent = 'Modo: CON lentes — mejora activada';
-    modeChip.textContent = 'Modo: CON lentes';
+    ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+    ctx.drawImage(img,0,0,iw,ih,dx,dy,dw,dh);
+    ctx.globalAlpha=0.8;ctx.globalCompositeOperation='lighter';
+    ctx.drawImage(img,0,0,iw,ih,dx-1*devicePixelRatio,dy-1*devicePixelRatio,dw+2*devicePixelRatio,dh+2*devicePixelRatio);
+    ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+    caption.textContent='Modo: CON lentes — mejora activada';modeChip.textContent='Modo: CON lentes';
   }
-
-  // If HUD on, draw translucent HUD elements onto canvas for capture+visual continuity
-  if(hudOn){
-    const pad = 16 * devicePixelRatio;
-    // draw small top-left box
-    ctx.fillStyle = 'rgba(0,0,0,0.28)';
-    roundRect(ctx, pad, pad, 240*devicePixelRatio, 60*devicePixelRatio, 8*devicePixelRatio);
-    ctx.fill();
-    ctx.fillStyle = '#dff';
-    ctx.font = `${14*devicePixelRatio}px sans-serif`;
-    ctx.fillText(getTimeString(), pad+12*devicePixelRatio, pad+22*devicePixelRatio);
-    ctx.font = `${12*devicePixelRatio}px sans-serif`;
-    ctx.fillStyle = '#bfe';
-    ctx.fillText('Visor AI · Modo demo', pad+12*devicePixelRatio, pad+42*devicePixelRatio);
-  }
-
-  // Draw detection overlay if on (DOM overlay used for interactivity; for capture we draw on canvas)
-  if(detectOn){
-    drawDetectionsCanvas();
-    drawDetectionsDOM(); // DOM overlay so boxes are crisp and selectable
-  } else {
-    clearDetectionsDOM();
-  }
+  if(hudOn){ctx.fillStyle='rgba(0,0,0,0.28)';roundRect(ctx,16,16,240,60,8);ctx.fill();ctx.fillStyle='#dff';ctx.font='14px sans-serif';ctx.fillText(getTimeString(),28,36);ctx.font='12px sans-serif';ctx.fillStyle='#bfe';ctx.fillText('Visor AI · Demo',28,54);}
+  if(detectOn){drawDetectionsCanvas();drawDetectionsDOM();}else clearDetectionsDOM();
 }
 
-/* Draw detection boxes directly on canvas (useful for capture) */
-function drawDetectionsCanvas(){
-  const dets = DETECTIONS[currentIndex] || [];
-  dets.forEach(d=>{
-    const x = d.x * canvasWidth, y = d.y * canvasHeight, w = d.w * canvasWidth, h = d.h * canvasHeight;
-    ctx.save();
-    ctx.lineWidth = 3*devicePixelRatio;
-    ctx.strokeStyle = 'rgba(0,255,200,0.95)';
-    ctx.fillStyle = 'rgba(0,255,200,0.06)';
-    roundRect(ctx, x, y, w, h, 8*devicePixelRatio);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(x, y - 26*devicePixelRatio, ctx.measureText(d.label).width + 16*devicePixelRatio, 22*devicePixelRatio);
-    ctx.fillStyle = '#bff';
-    ctx.font = `${14*devicePixelRatio}px sans-serif`;
-    ctx.fillText(d.label, x + 8*devicePixelRatio, y - 8*devicePixelRatio);
-    ctx.restore();
-  });
+/* CONTROLES */
+document.getElementById('toggleLensBtn').onclick=()=>{lensOn=!lensOn;document.getElementById('toggleLensBtn').textContent=lensOn?'Desactivar lentes':'Activar lentes';render();};
+document.getElementById('toggleDetectBtn').onclick=()=>{detectOn=!detectOn;document.getElementById('toggleDetectBtn').textContent=detectOn?'Ocultar detección':'Mostrar detección';render();};
+document.getElementById('prevBtn').onclick=()=>{currentIndex=(currentIndex-1+IMAGES.length)%IMAGES.length;render();};
+document.getElementById('nextBtn').onclick=()=>{currentIndex=(currentIndex+1)%IMAGES.length;render();};
+document.getElementById('autoRotateBtn').onclick=()=>{autoRotate=!autoRotate;document.getElementById('autoRotateBtn').textContent='Auto-rotar: '+(autoRotate?'ON':'OFF');if(autoRotate)startRotate();else stopRotate();};
+document.getElementById('captureBtn').onclick=()=>{const link=document.createElement('a');link.download='captura_lentes.png';link.href=canvas.toDataURL();link.click();};
+
+/* FUNCIONES EXTRA */
+function getTimeString(){const d=new Date();return d.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});}
+function startRotate(){stopRotate();rotateTimer=setInterval(()=>{if(autoRotate){currentIndex=(currentIndex+1)%IMAGES.length;render();}},ROTATE_INTERVAL);}
+function stopRotate(){if(rotateTimer)clearInterval(rotateTimer);}
+
+/* INICIALIZAR */
+function init(){
+  canvasWidth=canvas.clientWidth*devicePixelRatio;
+  canvasHeight=canvas.clientHeight*devicePixelRatio;
+  canvas.width=canvasWidth;canvas.height=canvasHeight;
+  IMAGES.forEach(src=>{const img=new Image();img.src=src;images.push(img);});
+  startRotate();render();
 }
-
-/* DOM-based overlay (for live view) */
-function drawDetectionsDOM(){
-  clearDetectionsDOM();
-  const dets = DETECTIONS[currentIndex] || [];
-  const rect = overlay.getBoundingClientRect();
-  dets.forEach(d=>{
-    const box = document.createElement('div');
-    box.className='box';
-    box.style.left = (d.x * rect.width) + 'px';
-    box.style.top = (d.y * rect.height) + 'px';
-    box.style.width = (d.w * rect.width) + 'px';
-    box.style.height = (d.h * rect.height) + 'px';
-    box.style.border = '2px solid rgba(0,255,200,0.95)';
-    box.style.boxSizing = 'border-box';
-    box.style.borderRadius = '8px';
-    box.style.background = 'linear-gradient(180deg, rgba(0,255,200,0.03), rgba(0,0,0,0.05))';
-    box.style.position='absolute';
-    const tag = document.createElement('div');
-    tag.className='label-tag';
-    tag.style.left = (d.x * rect.width) + 'px';
-    tag.style.top = (d.y * rect.height - 28) + 'px';
-    tag.textContent = d.label;
-    overlay.appendChild(box);
-    overlay.appendChild(tag);
-  });
-}
-
-/* Clear dom overlay */
-function clearDetectionsDOM(){
-  while(overlay.firstChild) overlay.removeChild(overlay.firstChild);
-}
-
-/* Helper: rounded rect */
-function roundRect(ctx, x, y, w, h, r){
-  ctx.beginPath();
-  ctx.moveTo(x+r, y);
-  ctx.arcTo(x+w, y, x+w, y+h, r);
-  ctx.arcTo(x+w, y+h, x, y+h, r);
-  ctx.arcTo(x, y+h, x, y, r);
-  ctx.arcTo(x, y, x+w, y, r);
-  ctx.closePath();
-}
-
-/* Controls wiring */
-document.getElementById('toggleLensBtn').addEventListener('click', ()=>{
-  lensOn = !lensOn;
-  document.getElementById('toggleLensBtn').textContent = lensOn ? 'Desactivar lentes' : 'Activar lentes';
-  render();
-});
-document.getElementById('toggleDetectBtn').addEventListener('click', ()=>{
-  detectOn = !detectOn;
-  document.getElementById('toggleDetectBtn').textContent = detectOn ? 'Ocultar detección' : 'Mostrar detección';
-  render();
-});
-document.getElementById('prevBtn').addEventListener('click', ()=>{
-  currentIndex = (currentIndex - 1 + IMAGES.length) % IMAGES.length;
-  render();
-});
-document.getElementById('nextBtn').addEventListener('click', ()=>{
-  currentIndex = (currentIndex + 1) % IMAGES.length;
-  render();
-});
-document.getElementById('autoRotateBtn').addEventListener('click', ()=>{
-  autoRotate = !autoRotate;
-  document.getElementById('autoRotateBtn').textContent = 'Auto-rotar: ' + (autoRotate ? 'ON' : 'OFF');
-  if(autoRotate) startAutoRotate(); else stopAutoRotate();
-});
-document.getElementById('hudSwitch').addEventListener('click', (e)=>{
-  hudOn = !hudOn;
-  e.currentTarget.classList.toggle('on', hudOn);
-  overlay.style.display = hudOn ? 'block' : 'block'; // DOM overlay still needed for detection
-  render();
-});
-document.getElementById('captureBtn').addEventListener('click', captureImage);
-
-/* Timer for time/battery updates (HUD) */
-function updateHud(){
-  document.getElementById('timeNow').textContent = getTimeString();
-  document.getElementById('temp').textContent = 'Temp: ' + (20 + Math.floor(Math.random()*7)) + '°C';
-  document.getElementById('battery').textContent = 'Batería: ' + (60 + Math.floor(Math.random()*40)) + '%';
-}
-setInterval(updateHud, 5000);
-updateHud();
-
-/* Auto-rotate */
-function startAutoRotate(){
-  stopAutoRotate();
-  rotateTimer = setInterval(()=>{
-    currentIndex = (currentIndex + 1) % IMAGES.length;
-    render();
-  }, ROTATE_INTERVAL);
-}
-function stopAutoRotate(){ if(rotateTimer) { clearInterval(rotateTimer); rotateTimer=null; } }
-
-/* Capture: download canvas as image */
-function captureImage(){
-  // draw again but ensure detections drawn on canvas
-  render();
-  // create a dataURL
-  const data = canvas.toDataURL('image/png');
-  const a = document.createElement('a');
-  a.href = data;
-  a.download = `simulador_lentes_capture_${Date.now()}.png`;
-  a.click();
-}
-
-/* Utility */
-function getTimeString(){
-  const d = new Date();
-  return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-}
-
-/* Ensure overlay sizing and load images */
-window.addEventListener('load', ()=>{
-  preload();
-  resizeCanvas();
-});
+window.addEventListener('resize',()=>{init();});
+init();
 </script>
 </body>
 </html>
-
